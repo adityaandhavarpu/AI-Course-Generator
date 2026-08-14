@@ -1,0 +1,23 @@
+# Node dependencies
+/node_modules/
+
+# Build output
+/dist/
+
+# Local environment files
+.env
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Editor settings (keep workspace extensions list)
+.vscode/
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Misc
+/dist-ssr/
+*.local
