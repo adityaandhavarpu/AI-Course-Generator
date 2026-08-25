@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useAuth } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 import CourseDetail from './pages/CourseDetail';
 import ModuleDetail from './pages/ModuleDetail';
@@ -9,7 +9,9 @@ import Register from './pages/Register';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const { token, loading } = useAuth();
+
+  if (loading) return null;
   if (!token) {
     return <Navigate to="/login" replace />;
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import { courseAPI } from '../api/client';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -16,7 +16,7 @@ const CourseDetail = () => {
   const fetchCourse = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/courses/${id}`);
+      const response = await courseAPI.getCourseById(id);
       setCourse(response.data);
     } catch (err) {
       setError('Failed to load course');
@@ -77,8 +77,8 @@ const CourseDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {course.modules.map((module, idx) => (
                 <div
-                  key={module._id}
-                  onClick={() => navigate(`/modules/${module._id}`)}
+                  key={module.id}
+                  onClick={() => navigate(`/modules/${module.id}`)}
                   className="bg-white rounded-lg shadow-md hover:shadow-xl transition cursor-pointer overflow-hidden group"
                 >
                   <div className="bg-gradient-to-br from-purple-500 to-blue-500 h-24 flex items-center justify-center group-hover:shadow-lg transition">
@@ -89,7 +89,7 @@ const CourseDetail = () => {
                       Module {idx + 1}: {module.title}
                     </h3>
                     <p className="text-gray-600 text-sm mb-4">
-                      {module.lessons?.length || 0} lessons
+                      Open this module to view its lessons
                     </p>
                     <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-medium">
                       View Module

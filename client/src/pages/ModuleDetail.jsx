@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import { moduleAPI } from '../api/client';
 
 const ModuleDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [module, setModule] = useState(null);
-  const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,18 +16,8 @@ const ModuleDetail = () => {
   const fetchModule = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/modules/${id}`);
+      const response = await moduleAPI.getModuleById(id);
       setModule(response.data);
-      
-      // Fetch course details if available
-      if (response.data.course) {
-        try {
-          const courseResponse = await api.get(`/courses/${response.data.course}`);
-          setCourse(courseResponse.data);
-        } catch (err) {
-          console.error('Failed to fetch course');
-        }
-      }
     } catch (err) {
       setError('Failed to load module');
       console.error(err);
@@ -76,7 +65,7 @@ const ModuleDetail = () => {
             ← Back to Dashboard
           </button>
           <h1 className="text-4xl font-bold mb-2">{module.title}</h1>
-          {course && <p className="text-purple-100">From: {course.title}</p>}
+          <p className="text-purple-100">Choose a lesson to generate and read its content.</p>
         </div>
       </header>
 
@@ -88,8 +77,8 @@ const ModuleDetail = () => {
             <div className="space-y-4">
               {module.lessons.map((lesson, idx) => (
                 <div
-                  key={lesson._id}
-                  onClick={() => navigate(`/lessons/${lesson._id}`)}
+                  key={lesson.id}
+                  onClick={() => navigate(`/lessons/${lesson.id}`)}
                   className="bg-white rounded-lg shadow-md hover:shadow-lg transition cursor-pointer p-6 group"
                 >
                   <div className="flex items-start justify-between">

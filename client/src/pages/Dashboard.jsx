@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import { courseAPI } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [topic, setTopic] = useState('');
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ const Dashboard = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/courses');
+      const response = await courseAPI.getCourses();
       setCourses(response.data);
     } catch (err) {
       setError('Failed to load courses');
@@ -35,10 +37,11 @@ const Dashboard = () => {
 
     setGenerating(true);
     try {
-      const response = await api.post('/courses/generate', { topic });
-      setCourses([response.data, ...courses]);
+      const response = await courseAPI.generateCourse(topic.trim());
       setTopic('');
       setShowGenerateModal(false);
+      await fetchCourses();
+      navigate(`/courses/${response.data.courseId}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to generate course');
     } finally {
@@ -50,24 +53,12 @@ const Dashboard = () => {
     if (!window.confirm('Are you sure you want to delete this course?')) return;
 
     try {
-      await api.delete(`/courses/${courseId}`);
-      setCourses(courses.filter(c => c._id !== courseId));
+      await courseAPI.deleteCourse(courseId);
+      setCourses((currentCourses) => currentCourses.filter((course) => course.id !== courseId));
     } catch (err) {
       setError('Failed to delete course');
     }
   };
-
-  const getStoredUser = () => {
-    try {
-      const stored = localStorage.getItem('user');
-      if (!stored || stored === 'undefined' || stored === 'null') return {};
-      return JSON.parse(stored);
-    } catch (err) {
-      return {};
-    }
-  };
-
-  const user = getStoredUser();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -81,8 +72,7 @@ const Dashboard = () => {
             </div>
             <button
               onClick={() => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
+                logout();
                 navigate('/login');
               }}
               className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100 transition"
@@ -170,7 +160,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map(course => (
                 <div
-                  key={course._id}
+                  key={course.id}
                   className="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer group"
                 >
                   <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-32 flex items-center justify-center group-hover:shadow-lg transition">
@@ -185,12 +175,12 @@ const Dashboard = () => {
                     </p>
                     <div className="mb-4">
                       <p className="text-sm text-gray-500">
-                        📚 {course.modules?.length || 0} modules
+                        Created {new Date(course.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => navigate(`/courses/${course._id}`)}
+                        onClick={() => navigate(`/courses/${course.id}`)}
                         className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
                       >
                         View Course
@@ -198,7 +188,7 @@ const Dashboard = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteCourse(course._id);
+                          handleDeleteCourse(course.id);
                         }}
                         className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition text-sm font-medium"
                       >

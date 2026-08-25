@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import { authAPI } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,9 +24,9 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/login', formData);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      const response = await authAPI.login(formData.email, formData.password);
+      const { token, _id, name, email } = response.data;
+      login({ id: _id, name, email }, token);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');

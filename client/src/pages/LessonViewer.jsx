@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import { lessonAPI } from '../api/client';
 import LessonRenderer from '../components/LessonRenderer';
 import LessonPDFExporter from '../components/LessonPDFExporter';
 
@@ -19,7 +19,7 @@ const LessonViewer = () => {
     try {
       setLoading(true);
       // Backend will enrich if not already enriched
-      const response = await api.get(`/lessons/${id}`);
+      const response = await lessonAPI.getLessonById(id);
       setLesson(response.data);
     } catch (err) {
       setError('Failed to load lesson');

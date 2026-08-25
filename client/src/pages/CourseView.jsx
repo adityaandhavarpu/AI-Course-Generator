@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { courseAPI, moduleAPI, lessonAPI } from '../api/client';
+import LessonRenderer from '../components/LessonRenderer';
 
 const CourseView = () => {
   const { id } = useParams();
@@ -22,12 +23,7 @@ const CourseView = () => {
       const response = await courseAPI.getCourseById(id);
       setCourse(response.data);
       if (response.data.modules?.length > 0) {
-        setSelectedModule(response.data.modules[0]);
-        if (response.data.modules[0].lessons?.length > 0) {
-          // Fetch enriched lesson for first lesson
-          const lessonResponse = await lessonAPI.getLessonById(response.data.modules[0].lessons[0]._id);
-          setSelectedLesson(lessonResponse.data);
-        }
+        await handleSelectModule(response.data.modules[0]);
       }
     } catch (err) {
       setError('Failed to load course');
@@ -37,11 +33,24 @@ const CourseView = () => {
     }
   };
 
+  const handleSelectModule = async (moduleSummary) => {
+    try {
+      setLessonLoading(true);
+      setSelectedLesson(null);
+      const response = await moduleAPI.getModuleById(moduleSummary.id);
+      setSelectedModule(response.data);
+    } catch (err) {
+      setError('Failed to load module lessons');
+    } finally {
+      setLessonLoading(false);
+    }
+  };
+
   const handleSelectLesson = async (lesson) => {
     setLessonLoading(true);
     try {
       // Fetch enriched lesson from backend (lessonController will enrich if needed)
-      const response = await lessonAPI.getLessonById(lesson._id);
+      const response = await lessonAPI.getLessonById(lesson.id);
       setSelectedLesson(response.data);
     } catch (err) {
       console.error('Error fetching lesson:', err);
@@ -69,7 +78,7 @@ const CourseView = () => {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'Course not found'}</p>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
           >
             Back to Dashboard
@@ -85,7 +94,7 @@ const CourseView = () => {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
         <div className="max-w-7xl mx-auto">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="mb-4 text-white hover:text-gray-200 flex items-center gap-2"
           >
             ← Back to Courses
@@ -104,22 +113,19 @@ const CourseView = () => {
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {course.modules?.map((module, idx) => (
                   <button
-                    key={module._id}
+                    key={module.id}
                     onClick={() => {
-                      setSelectedModule(module);
-                      if (module.lessons?.length > 0) {
-                        handleSelectLesson(module.lessons[0]);
-                      }
+                      handleSelectModule(module);
                     }}
                     className={`w-full text-left px-3 py-2 rounded-lg transition ${
-                      selectedModule?._id === module._id
+                      selectedModule?.id === module.id
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <div className="font-medium">{idx + 1}. {module.title}</div>
                     <div className="text-xs mt-1 opacity-75">
-                      {module.lessons?.length || 0} lessons
+                      View lessons
                     </div>
                   </button>
                 ))}
@@ -142,11 +148,11 @@ const CourseView = () => {
                   <div className="space-y-2">
                     {selectedModule.lessons?.map((lesson, idx) => (
                       <button
-                        key={lesson._id}
+                        key={lesson.id}
                         onClick={() => handleSelectLesson(lesson)}
                         disabled={lessonLoading}
                         className={`w-full text-left px-4 py-3 rounded-lg transition ${
-                          selectedLesson?._id === lesson._id
+                          selectedLesson?.id === lesson.id
                             ? 'bg-blue-100 border-l-4 border-blue-600'
                             : 'bg-gray-50 hover:bg-gray-100'
                         } disabled:opacity-50`}
@@ -187,11 +193,7 @@ const CourseView = () => {
                     {selectedLesson.content && selectedLesson.content.length > 0 ? (
                       <div className="mb-6">
                         <h5 className="text-lg font-bold text-gray-800 mb-2">📚 Content</h5>
-                        <div className="bg-gray-50 p-4 rounded-lg text-gray-700 whitespace-pre-wrap">
-                          {typeof selectedLesson.content === 'string'
-                            ? selectedLesson.content
-                            : selectedLesson.content.join('\n')}
-                        </div>
+                        <LessonRenderer content={selectedLesson.content} />
                       </div>
                     ) : (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
