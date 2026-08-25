@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  courses   Course[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  creator     User     @relation(fields: [creatorId], references: [id])
+  creatorId   String   @map("creator_id")
+  modules     Module[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([creatorId])
+  @@map("courses")
+}
+
+model Module {
+  id        String   @id @default(uuid())
+  title     String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   String   @map("course_id")
+  lessons   Lesson[]
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([courseId, order])
+  @@map("modules")
+}
+
+model Lesson {
+  id         String   @id @default(uuid())
+  title      String
+  objectives String[] @default([])
+  content    Json     @default("[]")
+  isEnriched Boolean  @default(false) @map("is_enriched")
+  module     Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId   String   @map("module_id")
+  order      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([moduleId, order])
+  @@map("lessons")
+}

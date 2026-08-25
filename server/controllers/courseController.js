@@ -1,65 +1,63 @@
-import Course from '../models/Course.js';
-import Module from '../models/Module.js';
-import Lesson from '../models/Lesson.js';
+import prisma from '../config/prisma.js';
 import { generateCoursePrompt } from '../services/geminiService.js';
 
 export const generateAndSaveCourse = async (req, res) => {
     try {
         const { topic } = req.body;
-        const creatorId = req.user._id;
+        const creatorId = req.user.id;
 
         if (!topic) return res.status(400).json({ message: "Topic is required" });
 
         const courseOutline = await generateCoursePrompt(topic);
 
-        const newCourse = new Course({
-            title: courseOutline.title,
-            description: courseOutline.description,
-            creator: creatorId,
-            tags: courseOutline.tags || [topic],
-            modules: []
-        });
-        const savedCourse = await newCourse.save();
-
-        for (const modData of courseOutline.modules) {
-            const newModule = new Module({
-                title: modData.title,
-                course: savedCourse._id,
-                lessons: []
-            });
-            const savedModule = await newModule.save();
-
-            for (const lesData of modData.lessons) {
-                const newLesson = new Lesson({
-                    title: lesData.title,
-                    objectives: [],
-                    content: [],
-                    isEnriched: false,
-                    module: savedModule._id
-                });
-                const savedLesson = await newLesson.save();
-                savedModule.lessons.push(savedLesson._id);
-                await savedModule.save();
+        const savedCourse = await prisma.course.create({
+            data: {
+                title: courseOutline.title,
+                description: courseOutline.description,
+                creatorId: creatorId,
             }
+        });
 
-            savedCourse.modules.push(savedModule._id);
-            await savedCourse.save();
+        for (let i = 0; i < courseOutline.modules.length; i++) {
+            const modData = courseOutline.modules[i];
+            
+            const savedModule = await prisma.module.create({
+                data: {
+                    title: modData.title,
+                    order: i,
+                    courseId: savedCourse.id
+                }
+            });
+
+            for (let j = 0; j < modData.lessons.length; j++) {
+                const lesData = modData.lessons[j];
+                
+                await prisma.lesson.create({
+                    data: {
+                        title: lesData.title,
+                        order: j,
+                        moduleId: savedModule.id
+                    }
+                });
+            }
         }
 
-        const populatedCourse = await Course.findById(savedCourse._id).populate({
-            path: 'modules',
-            populate: { path: 'lessons' }
+        res.status(201).json({ 
+            message: "Course generated successfully",
+            courseId: savedCourse.id 
         });
-
-        res.status(201).json(populatedCourse);
     } catch (error) {
+        console.error("Generate Course Error:", error);
         res.status(500).json({ message: "Failed to generate course outline via AI" });
     }
 };
 
 export const getCourses = async (req, res) => {
     try {
-        const courses = await Course.find({ creator: req.user._id }).sort({ createdAt: -1 });
+        const courses = await prisma.course.findMany({
+            where: { creatorId: req.user.id },
+            orderBy: { createdAt: 'desc' }
+        });
         res.status(200).json(courses);
     } catch (error) {
         res.status(500).json({ message: "Server error while fetching courses" });
@@ -68,8 +66,21 @@ export const getCourses = async (req, res) => {
 
 export const getCourseById = async (req, res) => {
     try {
-        const course = await Course.findById(req.params.id).populate('modules');
+        const course = await prisma.course.findUnique({
+            where: { id: req.params.id },
+            include: { 
+                modules: {
+                    orderBy: { order: 'asc' }
+                } 
+            }
+        });
+        
         if (!course) return res.status(404).json({ message: "Course not found" });
+
+        if (course.creatorId !== req.user.id) {
+            return res.status(403).json({ message: "Not authorized to access this course" });
+        }
+
         res.status(200).json(course);
     } catch (error) {
         res.status(500).json({ message: "Server error" });
@@ -78,20 +89,15 @@ export const getCourseById = async (req, res) => {
 
 export const deleteCourse = async (req, res) => {
     try {
-        const course = await Course.findById(req.params.id);
+        const course = await prisma.course.findUnique({ where: { id: req.params.id } });
+        
         if (!course) return res.status(404).json({ message: "Course not found" });
 
-        if (course.creator.toString() !== req.user._id.toString()) {
+        if (course.creatorId !== req.user.id) {
             return res.status(403).json({ message: "Not authorized to delete this course" });
         }
 
-        const modules = await Module.find({ course: course._id });
-        for (const mod of modules) {
-            await Lesson.deleteMany({ module: mod._id });
-        }
-
-        await Module.deleteMany({ course: course._id });
-        await course.deleteOne();
+        await prisma.course.delete({ where: { id: req.params.id } });
 
         res.status(200).json({ message: "Course and contents removed successfully" });
     } catch (error) {

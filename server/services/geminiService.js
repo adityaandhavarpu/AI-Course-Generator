@@ -15,7 +15,6 @@ export const generateCoursePrompt = async (topic) => {
       {
         "title": "Course Title",
         "description": "A short description of the course",
-        "tags": ["tag1", "tag2"],
         "modules": [
           {
             "title": "Module Title",

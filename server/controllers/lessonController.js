@@ -1,17 +1,26 @@
-import Lesson from '../models/Lesson.js';
+import prisma from '../config/prisma.js';
 import { generateLessonPrompt } from '../services/geminiService.js';
 
 export const getLessonById = async (req, res) => {
     try {
-        const lesson = await Lesson.findById(req.params.id).populate({
-            path: 'module',
-            populate: { path: 'course' }
+        const lesson = await prisma.lesson.findUnique({
+            where: { id: req.params.id },
+            include: {
+                module: {
+                    include: { course: { select: { title: true, creatorId: true } } }
+                }
+            }
         });
 
         if (!lesson) return res.status(404).json({ message: "Lesson not found" });
 
+        if (lesson.module.course.creatorId !== req.user.id) {
+            return res.status(403).json({ message: "Not authorized to access this lesson" });
+        }
+
         if (lesson.isEnriched) {
-            return res.status(200).json(lesson);
+            const { module, ...responseData } = lesson;
+            return res.status(200).json(responseData);
         }
 
         const lessonTitle = lesson.title;
@@ -20,12 +29,16 @@ export const getLessonById = async (req, res) => {
 
         const aiContent = await generateLessonPrompt(courseTitle, moduleTitle, lessonTitle);
 
-        lesson.objectives = aiContent.objectives || [];
-        lesson.content = aiContent.content || [];
-        lesson.isEnriched = true;
+        const updatedLesson = await prisma.lesson.update({
+            where: { id: lesson.id },
+            data: {
+                objectives: aiContent.objectives || [],
+                content: aiContent.content || [],
+                isEnriched: true
+            }
+        });
 
-        await lesson.save();
-        res.status(200).json(lesson);
+        res.status(200).json(updatedLesson);
     } catch (error) {
         console.error("Lesson Error:", error);
         res.status(500).json({ message: "Server error while processing lesson" });

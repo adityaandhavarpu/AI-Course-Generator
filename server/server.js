@@ -1,14 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { connectDB } from './config/db.js';
+import prisma from './config/prisma.js';
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import moduleRoutes from './routes/moduleRoutes.js';
 import lessonRoutes from './routes/lessonRoutes.js';
 
 dotenv.config();
-connectDB();
+
 
 const app = express();
 
@@ -26,3 +26,8 @@ app.get('/api/health', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));
+
+process.on('SIGINT', async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+});
