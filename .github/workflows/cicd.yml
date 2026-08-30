@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend-ci:
-    name: Frontend Build & Lint
+    name: Frontend Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -79,4 +79,3 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: "--prod"
-          working-directory: ./client
