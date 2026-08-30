@@ -21,3 +21,4 @@ logs/
 # Misc
 /dist-ssr/
 *.local
+.vercel
