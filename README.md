@@ -1,6 +1,6 @@
 # AI Course Generator
 
-An AI-powered learning platform that turns a topic into a structured course with modules, lessons, objectives, content blocks, videos, and multiple-choice questions.
+An AI-powered learning platform that turns a topic into a fully structured course with modules, lessons, objectives, content blocks, videos, and multiple-choice questions — presented in a modern dark obsidian UI.
 
 ## Features
 
@@ -8,10 +8,15 @@ An AI-powered learning platform that turns a topic into a structured course with
 - Password hashing with bcrypt
 - AI-generated course outlines using Google Gemini
 - AI-generated lesson content, objectives, code examples, videos, and MCQs
-- Lazy lesson generation to avoid generating content until a learner opens a lesson
+- Lazy lesson generation — content is only generated when a learner opens a lesson
 - Course ownership checks so users can access only their own content
 - Interactive MCQs and PDF lesson export
 - PostgreSQL data storage with Prisma ORM
+- Dark obsidian glassmorphism UI (inspired by Google Gemini)
+- Collapsible left sidebar with course history navigation across all pages
+- Tabbed lesson viewer — Content, Code, Videos, and Exercises in separate tabs
+- Fully responsive layout with micro-animations and smooth transitions
+- CI/CD pipeline with GitHub Actions deploying to Vercel (frontend) and Render (backend)
 
 ## Tech Stack
 
@@ -22,6 +27,7 @@ An AI-powered learning platform that turns a topic into a structured course with
 | Database | Neon PostgreSQL |
 | AI | Google Gemini API |
 | Deployment | Vercel (frontend), Render (backend) |
+| CI/CD | GitHub Actions |
 
 ## Architecture
 
@@ -41,6 +47,18 @@ The course data is stored in this hierarchy:
 User -> Course -> Module -> Lesson
 ```
 
+## UI Overview
+
+The interface follows a dark obsidian aesthetic (`#131314` background, `#1e1f20` surface cards) with glassmorphism effects across all pages.
+
+| Page | Description |
+| --- | --- |
+| Dashboard | Centered AI prompt input with suggestion chips and a collapsible left course history sidebar |
+| Course Detail | Grid of module cards with module numbering and a View Lessons arrow |
+| Module Detail | Module overview banner followed by a lessons list with difficulty badges |
+| Lesson Viewer | Sticky header with tabbed content — 📖 Content, 💻 Code, 🎥 Videos, ❓ Exercises |
+| Login / Register | Glassmorphic auth cards with gradient title and animated focus states |
+
 ## Project Structure
 
 ```text
@@ -49,8 +67,9 @@ AI-Course-Generator/
 │   └── src/
 │       ├── api/             # Axios API client
 │       ├── components/      # Reusable UI and lesson blocks
+│       │   └── blocks/      # HeadingBlock, ParagraphBlock, CodeBlock, MCQBlock, VideoBlockWrapper
 │       ├── context/         # Authentication state
-│       └── pages/           # Application screens
+│       └── pages/           # Dashboard, CourseDetail, ModuleDetail, LessonViewer, Login, Register
 ├── server/                  # Express backend
 │   ├── config/              # Prisma client setup
 │   ├── controllers/         # API business logic
@@ -59,6 +78,7 @@ AI-Course-Generator/
 │   ├── routes/              # API endpoints
 │   ├── services/            # Gemini integration
 │   └── utils/               # JWT helper
+├── vercel.json              # Vercel build configuration
 └── README.md
 ```
 
@@ -182,6 +202,22 @@ Add this Vercel environment variable:
 
 ```text
 VITE_API_URL=https://your-render-service.onrender.com/api
+```
+
+### CI/CD: GitHub Actions
+
+The `.github/workflows/cicd.yml` pipeline runs on every push to `main`:
+
+1. Builds the frontend from `./client`
+2. Installs and checks the backend from `./server`
+3. Triggers a Render deploy hook for the backend
+4. Deploys the frontend to Vercel using `VERCEL_TOKEN`
+
+Add these secrets in GitHub → Settings → Secrets:
+
+```text
+VERCEL_TOKEN=<your Vercel API token>
+RENDER_DEPLOY_HOOK_URL=<your Render deploy hook URL>
 ```
 
 ## Security Notes
