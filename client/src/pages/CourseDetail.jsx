@@ -6,11 +6,14 @@ const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     fetchCourse();
+    fetchAllCourses();
   }, [id]);
 
   const fetchCourse = async () => {
@@ -26,12 +29,21 @@ const CourseDetail = () => {
     }
   };
 
+  const fetchAllCourses = async () => {
+    try {
+      const res = await courseAPI.getCourses();
+      setCourses(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading course...</p>
+      <div className="min-h-screen bg-[#131314] text-[#e3e3e3] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-10 h-10 border-3 border-[#4285f4] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-[#80868b] font-medium">Loading Course Outline...</p>
         </div>
       </div>
     );
@@ -39,14 +51,14 @@ const CourseDetail = () => {
 
   if (error || !course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Course not found'}</p>
+      <div className="min-h-screen bg-[#131314] text-[#e3e3e3] flex items-center justify-center p-4">
+        <div className="text-center p-8 rounded-2xl glass-card border border-[#2d2f31] max-w-md">
+          <p className="text-red-400 mb-6 font-medium">{error || 'Course not found'}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-[#4285f4] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition"
           >
-            Back to Dashboard
+            ← Return to Dashboard
           </button>
         </div>
       </div>
@@ -54,57 +66,139 @@ const CourseDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-[#131314] text-[#e3e3e3] flex overflow-hidden">
+      {/* Left Sidebar (Course List Navigation) */}
+      <aside
+        className={`${
+          sidebarOpen ? 'w-72' : 'w-0 sm:w-16'
+        } transition-all duration-300 bg-[#1e1f20] border-r border-[#2d2f31] flex flex-col justify-between z-30 shrink-0 relative`}
+      >
+        <div className="p-3 space-y-4">
+          {/* Top Bar inside Sidebar */}
+          <div className="flex items-center justify-between px-2 py-1">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-[#28292a] text-[#c4c7c5] hover:text-white transition"
+              title="Toggle Sidebar"
+            >
+              ☰
+            </button>
+            {sidebarOpen && (
+              <span className="text-xs font-bold text-[#4285f4] uppercase tracking-wider">
+                Workspace
+              </span>
+            )}
+          </div>
+
+          {/* Back to Home Button */}
           <button
             onClick={() => navigate('/')}
-            className="mb-4 text-blue-100 hover:text-white flex items-center gap-2 transition"
+            className="w-full py-2 px-3 rounded-xl bg-[#28292a] hover:bg-[#333537] border border-[#2d2f31] text-xs font-semibold text-[#c4c7c5] hover:text-white flex items-center gap-2 transition"
           >
-            ← Back to Dashboard
+            <span>←</span>
+            {sidebarOpen && <span>Back to Home</span>}
           </button>
-          <h1 className="text-4xl font-bold mb-2">{course.title}</h1>
-          <p className="text-blue-100 text-lg">{course.description}</p>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">📚 Modules</h2>
+          {/* Recent Courses List */}
+          {sidebarOpen && (
+            <div className="space-y-3 pt-2">
+              <h4 className="text-[11px] font-bold text-[#80868b] uppercase tracking-wider px-2">
+                All Courses ({courses.length})
+              </h4>
 
-          {course.modules && course.modules.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {course.modules.map((module, idx) => (
-                <div
-                  key={module.id}
-                  onClick={() => navigate(`/modules/${module.id}`)}
-                  className="bg-white rounded-lg shadow-md hover:shadow-xl transition cursor-pointer overflow-hidden group"
-                >
-                  <div className="bg-gradient-to-br from-purple-500 to-blue-500 h-24 flex items-center justify-center group-hover:shadow-lg transition">
-                    <span className="text-4xl">📋</span>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">
-                      Module {idx + 1}: {module.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Open this module to view its lessons
-                    </p>
-                    <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-medium">
-                      View Module
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-gray-600">No modules found</p>
+              <div className="space-y-1 max-h-[calc(100vh-230px)] overflow-y-auto pr-1">
+                {courses.map((item) => {
+                  const isCurrent = item.id === course.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => navigate(`/courses/${item.id}`)}
+                      className={`p-2 rounded-xl border cursor-pointer transition text-xs flex items-center gap-2 ${
+                        isCurrent
+                          ? 'bg-[#28292a] border-[#4285f4] text-[#4285f4] font-bold'
+                          : 'bg-transparent border-transparent text-[#c4c7c5] hover:bg-[#28292a] hover:text-white'
+                      }`}
+                    >
+                      <span className="text-sm shrink-0">📖</span>
+                      <span className="truncate font-medium">{item.title}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
-      </main>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+        {/* Navbar */}
+        <header className="border-b border-[#2d2f31] glass-panel sticky top-0 z-20 px-6 py-3.5 flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#4285f4] via-[#9b51e0] to-[#e91e63] flex items-center justify-center p-0.5">
+              <div className="w-full h-full bg-[#131314] rounded-[10px] flex items-center justify-center">
+                <span className="text-sm animate-spark-pulse">✨</span>
+              </div>
+            </div>
+            <h1 className="text-lg font-extrabold tracking-tight">
+              AI <span className="gemini-text-gradient">Course Generator</span>
+            </h1>
+          </div>
+        </header>
+
+        {/* Main Workspace Container */}
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">
+          {/* Course Banner */}
+          <div className="p-6 sm:p-8 rounded-2xl glass-card border border-[#2d2f31] space-y-3">
+            <span className="px-2.5 py-1 rounded-md bg-[#28292a] text-[10px] font-semibold text-[#4285f4] uppercase tracking-wider border border-[#2d2f31]">
+              Course Syllabus
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#e3e3e3] leading-tight">
+              {course.title}
+            </h2>
+            <p className="text-sm text-[#c4c7c5] leading-relaxed max-w-3xl">
+              {course.description || 'AI Generated Course Syllabus'}
+            </p>
+          </div>
+
+          {/* Modules List */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-[#80868b] uppercase tracking-wider flex items-center gap-2">
+              <span>📚</span> Modules ({course.modules?.length || 0})
+            </h3>
+
+            {course.modules && course.modules.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {course.modules.map((module, idx) => (
+                  <div
+                    key={module.id}
+                    onClick={() => navigate(`/modules/${module.id}`)}
+                    className="rounded-2xl glass-card hover:bg-[#28292a] border border-[#2d2f31] hover:border-[#4285f4]/40 p-5 transition cursor-pointer flex flex-col justify-between gap-4 group shadow-lg"
+                  >
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-bold text-[#9b51e0] uppercase tracking-wider">
+                        Module {idx + 1}
+                      </span>
+                      <h4 className="text-base font-bold text-[#e3e3e3] group-hover:text-[#4285f4] transition line-clamp-2">
+                        {module.title}
+                      </h4>
+                    </div>
+
+                    <div className="pt-3 border-t border-[#2d2f31]/60 flex items-center justify-between text-xs text-[#4285f4] font-semibold group-hover:translate-x-1 transition-transform">
+                      <span>View Lessons</span>
+                      <span>➔</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 rounded-2xl glass-card border border-[#2d2f31] text-sm text-[#80868b]">
+                No modules found for this course.
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

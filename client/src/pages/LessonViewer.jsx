@@ -31,12 +31,12 @@ const LessonViewer = () => {
 
   if (error && !lesson) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+      <div className="min-h-screen bg-[#131314] text-slate-100 flex items-center justify-center p-4">
+        <div className="bg-[#1e1f20] border border-[#2f3031] p-8 rounded-2xl max-w-md w-full text-center shadow-2xl">
+          <p className="text-red-400 mb-6 text-lg">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            className="w-full bg-[#2f3031] text-slate-200 hover:text-white hover:bg-[#3c3d3e] font-medium px-6 py-3 rounded-xl transition"
           >
             Back to Dashboard
           </button>
@@ -47,10 +47,10 @@ const LessonViewer = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#131314] text-slate-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg">Generating AI Lesson Content...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-300 mx-auto"></div>
+          <p className="mt-4 text-slate-400 text-lg font-medium">Generating AI Lesson Content...</p>
         </div>
       </div>
     );
@@ -58,12 +58,12 @@ const LessonViewer = () => {
 
   if (!lesson) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Lesson not found</p>
+      <div className="min-h-screen bg-[#131314] text-slate-100 flex items-center justify-center p-4">
+        <div className="bg-[#1e1f20] border border-[#2f3031] p-8 rounded-2xl max-w-md w-full text-center shadow-2xl">
+          <p className="text-slate-400 mb-6 text-lg">Lesson not found</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            className="w-full bg-[#2f3031] text-slate-200 hover:text-white hover:bg-[#3c3d3e] font-medium px-6 py-3 rounded-xl transition"
           >
             Back to Dashboard
           </button>
@@ -73,41 +73,49 @@ const LessonViewer = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#131314] text-slate-100 font-sans">
       {/* Header */}
-      <header className="bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header className="border-b border-[#2f3031] bg-[#1e1f20]/50 backdrop-blur-md sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <button
             onClick={() => navigate(-1)}
-            className="mb-4 text-green-100 hover:text-white flex items-center gap-2 transition"
+            className="mb-4 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-medium transition"
           >
             ← Back
           </button>
-          <h1 className="text-4xl font-bold mb-2">{lesson.title}</h1>
-          <div className="flex items-center gap-2 text-green-100">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-100 via-slate-200 to-slate-400 bg-clip-text text-transparent mb-2">
+            {lesson.title}
+          </h1>
+          <div className="flex items-center gap-2 text-xs font-semibold">
             {lesson.isEnriched ? (
-              <span>✅ Enriched Content</span>
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                ✅ Enriched Content
+              </span>
             ) : (
-              <span>⏳ Generating Content...</span>
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                ⏳ Generating Content...
+              </span>
             )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* PDF Export Button */}
-        <div className="mb-8">
+        <div>
           <LessonPDFExporter lesson={lesson} />
         </div>
 
         {/* Learning Objectives */}
         {lesson.objectives && lesson.objectives.length > 0 && (
-          <div className="mb-8 bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">📚 Learning Objectives</h2>
-            <ul className="space-y-2">
+          <div className="bg-[#1e1f20] border border-[#2f3031] p-6 rounded-2xl shadow-xl">
+            <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
+              <span>📚</span> Learning Objectives
+            </h2>
+            <ul className="space-y-3">
               {lesson.objectives.map((objective, idx) => (
-                <li key={idx} className="flex items-start gap-3 text-gray-700">
-                  <span className="text-blue-600 font-bold mt-1">✓</span>
+                <li key={idx} className="flex items-start gap-3 text-slate-300 text-sm leading-relaxed">
+                  <span className="text-emerald-400 font-bold">✓</span>
                   <span>{objective}</span>
                 </li>
               ))}
@@ -116,7 +124,7 @@ const LessonViewer = () => {
         )}
 
         {/* Content Blocks */}
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-[#1e1f20] border border-[#2f3031] rounded-2xl shadow-xl p-8">
           <LessonRenderer content={lesson.content} />
         </div>
       </main>

@@ -57,19 +57,23 @@ const VideoBlockWrapper = ({ block }) => {
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6 text-center text-gray-600">Loading video...</div>
+      <div className="rounded-xl border border-[#2d2f31] glass-card p-6 text-center text-xs text-[#80868b] my-4">
+        Loading video...
+      </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-700">{error}</div>
+      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center text-xs text-red-400 my-4">
+        ⚠️ {error}
+      </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="relative pb-[56.25%]">
+    <div className="rounded-2xl border border-[#2d2f31] glass-card overflow-hidden my-6 shadow-xl">
+      <div className="relative pb-[56.25%] bg-[#0d0e0f]">
         <iframe
           title={video.title}
           src={`https://www.youtube.com/embed/${video.videoId}`}
@@ -79,12 +83,13 @@ const VideoBlockWrapper = ({ block }) => {
           className="absolute inset-0 h-full w-full"
         />
       </div>
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-900">{video.title}</h3>
-        <p className="mt-2 text-sm text-gray-600">{video.description}</p>
+      <div className="p-4 space-y-1">
+        <h4 className="text-sm font-bold text-[#e3e3e3]">{video.title}</h4>
+        <p className="text-xs text-[#80868b] line-clamp-2">{video.description}</p>
       </div>
     </div>
   );
 };
 
 export default VideoBlockWrapper;
+

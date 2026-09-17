@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { courseAPI } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+const SUGGESTED_TOPICS = [
+  { label: '⚡ React 19 & Server Actions', topic: 'React 19 Server Components and Actions' },
+  { label: '🤖 Distributed Systems Design', topic: 'Distributed Systems & Queue Architecture' },
+  { label: '🐳 Docker Microservices', topic: 'Containerization & Microservices with Docker' },
+  { label: '🐍 Python for Machine Learning', topic: 'Python Machine Learning & Data Pipelines' },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -11,9 +18,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Fetch courses on mount
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -31,15 +37,16 @@ const Dashboard = () => {
     }
   };
 
-  const handleGenerateCourse = async (e) => {
-    e.preventDefault();
-    if (!topic.trim()) return;
+  const handleGenerateCourse = async (e, customTopic) => {
+    if (e) e.preventDefault();
+    const targetTopic = customTopic || topic;
+    if (!targetTopic.trim()) return;
 
     setGenerating(true);
+    setError('');
     try {
-      const response = await courseAPI.generateCourse(topic.trim());
+      const response = await courseAPI.generateCourse(targetTopic.trim());
       setTopic('');
-      setShowGenerateModal(false);
       await fetchCourses();
       navigate(`/courses/${response.data.courseId}`);
     } catch (err) {
@@ -49,7 +56,8 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
+  const handleDeleteCourse = async (courseId, e) => {
+    if (e) e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this course?')) return;
 
     try {
@@ -61,149 +69,204 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🎓</span>
-              <h1 className="text-3xl font-bold">AI Course Generator</h1>
+    <div className="min-h-screen bg-[#131314] text-[#e3e3e3] flex overflow-hidden">
+      {/* Left Sidebar (Gemini Style Course History) */}
+      <aside
+        className={`${
+          sidebarOpen ? 'w-72' : 'w-0 sm:w-16'
+        } transition-all duration-300 bg-[#1e1f20] border-r border-[#2d2f31] flex flex-col justify-between z-30 shrink-0 relative`}
+      >
+        <div className="p-3 space-y-4">
+          {/* Top Bar inside Sidebar */}
+          <div className="flex items-center justify-between px-2 py-1">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-[#28292a] text-[#c4c7c5] hover:text-white transition"
+              title="Toggle Sidebar"
+            >
+              ☰
+            </button>
+            {sidebarOpen && (
+              <span className="text-xs font-bold text-[#4285f4] uppercase tracking-wider">
+                Workspace
+              </span>
+            )}
+          </div>
+
+
+
+          {/* Recent Courses List */}
+          {sidebarOpen && (
+            <div className="space-y-3 pt-2">
+              <h4 className="text-[11px] font-bold text-[#80868b] uppercase tracking-wider px-2">
+                Recent Courses ({courses.length})
+              </h4>
+
+              <div className="space-y-1 max-h-[calc(100vh-230px)] overflow-y-auto pr-1">
+                {loading ? (
+                  <div className="space-y-2 p-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-8 rounded-lg bg-[#28292a] animate-pulse" />
+                    ))}
+                  </div>
+                ) : courses.length === 0 ? (
+                  <p className="text-xs text-[#80868b] px-2 py-4 text-center">No courses yet</p>
+                ) : (
+                  courses.map((course) => (
+                    <div
+                      key={course.id}
+                      onClick={() => navigate(`/courses/${course.id}`)}
+                      className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#28292a] border border-transparent hover:border-[#2d2f31] cursor-pointer transition text-xs text-[#c4c7c5] hover:text-white"
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="text-sm shrink-0">📖</span>
+                        <span className="truncate font-medium">{course.title}</span>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteCourse(course.id, e)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition rounded"
+                        title="Delete"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* User Footer inside Sidebar */}
+        {sidebarOpen && (
+          <div className="p-3 border-t border-[#2d2f31] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-xs font-bold text-white">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <span className="text-xs font-medium text-[#c4c7c5] truncate max-w-[110px]">
+                {user?.name || 'User'}
+              </span>
             </div>
             <button
               onClick={() => {
                 logout();
                 navigate('/login');
               }}
-              className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100 transition"
+              className="text-[11px] text-[#80868b] hover:text-white transition"
             >
               Logout
             </button>
           </div>
-          <p className="text-blue-100 mt-2">Welcome, {user.name || 'User'}! Generate AI-powered courses instantly.</p>
-        </div>
-      </header>
+        )}
+      </aside>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Generate Course Section */}
-        <div className="mb-12">
-          <button
-            onClick={() => setShowGenerateModal(true)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition transform hover:scale-105"
-          >
-            ✨ Generate New Course
-          </button>
-        </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+        {/* Navbar */}
+        <header className="border-b border-[#2d2f31] glass-panel sticky top-0 z-20 px-6 py-3.5 flex justify-between items-center">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#4285f4] via-[#9b51e0] to-[#e91e63] flex items-center justify-center p-0.5">
+              <div className="w-full h-full bg-[#131314] rounded-[10px] flex items-center justify-center">
+                <span className="text-sm animate-spark-pulse">✨</span>
+              </div>
+            </div>
+            <h1 className="text-lg font-extrabold tracking-tight">
+              AI <span className="gemini-text-gradient">Course Generator</span>
+            </h1>
+          </div>
+        </header>
 
-        {/* Generate Course Modal */}
-        {showGenerateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Generate New Course</h2>
-              <form onSubmit={handleGenerateCourse} className="space-y-4">
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">Course Topic</label>
-                  <input
-                    type="text"
+
+
+        {/* Main Workspace */}
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 flex flex-col justify-between gap-8">
+          {/* Hero Section & Prompt Input */}
+          <section className="flex flex-col items-center text-center gap-6 pt-6">
+            <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight max-w-2xl leading-tight">
+              Hello, <span className="gemini-text-gradient">{user?.name || 'Learner'}</span>. <br />
+              What do you want to learn today?
+            </h2>
+
+            {/* Prompt Center Box */}
+            <div className="w-full max-w-2xl mt-2">
+              <form
+                onSubmit={handleGenerateCourse}
+                className="relative group rounded-2xl glass-card border border-[#2d2f31] focus-within:border-[#4285f4] transition shadow-2xl p-3 flex flex-col gap-3"
+              >
+                <div className="flex items-start gap-3 px-2 pt-1">
+                  <span className="text-2xl mt-1 text-[#4285f4]">✨</span>
+                  <textarea
+                    rows={2}
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g., Advanced React Patterns"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter any topic or concept (e.g. Master System Design, React 19, Microservices)..."
+                    className="w-full bg-transparent text-[#e3e3e3] placeholder-[#80868b] focus:outline-none resize-none text-base font-normal leading-relaxed"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleGenerateCourse(e);
+                      }
+                    }}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter any topic and AI will create a structured course</p>
                 </div>
-                <div className="flex gap-2 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowGenerateModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                  >
-                    Cancel
-                  </button>
+
+                <div className="flex justify-end items-center pt-2 border-t border-[#2d2f31]/50 px-2">
                   <button
                     type="submit"
                     disabled={generating || !topic.trim()}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-2 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b51e0] to-[#e91e63] text-white font-semibold text-sm hover:opacity-95 transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20"
                   >
-                    {generating ? 'Generating...' : 'Generate'}
+
+                    {generating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Generating AI Course...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Generate Course</span>
+                        <span>✨</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
-          </div>
-        )}
-
-        {/* Courses Section */}
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Your Courses</h2>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              {/* Quick Suggestion Chips */}
+              <div className="flex flex-wrap justify-center gap-2 mt-4">
+                {SUGGESTED_TOPICS.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setTopic(item.topic);
+                      handleGenerateCourse(null, item.topic);
+                    }}
+                    disabled={generating}
+                    className="px-3.5 py-1.5 rounded-full bg-[#1e1f20] hover:bg-[#28292a] border border-[#2d2f31] text-xs text-[#c4c7c5] hover:text-white transition flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                ))}
               </div>
-              <p className="mt-4 text-gray-600">Loading courses...</p>
             </div>
-          ) : courses.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-2xl text-gray-600 mb-4">📚 No courses yet</p>
-              <p className="text-gray-500">Generate your first course to get started!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map(course => (
-                <div
-                  key={course.id}
-                  className="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer group"
-                >
-                  <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-32 flex items-center justify-center group-hover:shadow-lg transition">
-                    <span className="text-5xl">📖</span>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {course.description}
-                    </p>
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-500">
-                        Created {new Date(course.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => navigate(`/courses/${course.id}`)}
-                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-                      >
-                        View Course
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCourse(course.id);
-                        }}
-                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition text-sm font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          </section>
+
+          {/* Error Notification */}
+          {error && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex justify-between items-center">
+              <span>⚠️ {error}</span>
+              <button onClick={() => setError('')} className="text-xs text-red-400 underline">Dismiss</button>
             </div>
           )}
-        </div>
-      </main>
+
+        </main>
+      </div>
     </div>
   );
 };
 
 export default Dashboard;
+
+
+
